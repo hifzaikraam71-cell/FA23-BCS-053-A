@@ -15,28 +15,13 @@ interface Ad {
   price?: number;
   views: number;
   createdAt: string;
-  category?: {
-    id: number;
-    name: string;
-  };
-  city?: {
-    id: number;
-    name: string;
-  };
+  category?: { id: number; name: string };
+  city?: { id: number; name: string };
   image?: string;
 }
 
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface City {
-  id: number;
-  name: string;
-  slug: string;
-}
+interface Category { id: number; name: string; slug: string }
+interface City { id: number; name: string; slug: string }
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -47,23 +32,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'ads' | 'create'>('ads');
 
-  // Form states
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    categoryId: '',
-    cityId: '',
-    packageId: '',
+    title: '', description: '', price: '', categoryId: '', cityId: '', packageId: '',
   });
   const [image, setImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    if (!user) { router.push('/login'); return; }
     fetchData();
   }, [user, router]);
 
@@ -74,9 +50,7 @@ export default function Dashboard() {
         axios.get('http://localhost:5000/categories'),
         axios.get('http://localhost:5000/cities'),
       ]);
-
-      // Filter ads by current user
-      const userAds = adsRes.data.data.filter((ad: Ad) => ad.user?.id === user.id);
+      const userAds = adsRes.data.data.filter((ad: Ad) => ad.user?.id === user?.id);
       setAds(userAds);
       setCategories(categoriesRes.data);
       setCities(citiesRes.data);
@@ -88,22 +62,16 @@ export default function Dashboard() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setImage(e.target.files[0]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
     try {
       const submitData = new FormData();
       submitData.append('title', formData.title);
@@ -114,191 +82,137 @@ export default function Dashboard() {
       if (formData.packageId) submitData.append('packageId', formData.packageId);
       if (image) submitData.append('image', image);
 
-      await axios.post('http://localhost:5000/ads', submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await axios.post('http://localhost:5000/ads', submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        price: '',
-        categoryId: '',
-        cityId: '',
-        packageId: '',
-      });
+      setFormData({ title: '', description: '', price: '', categoryId: '', cityId: '', packageId: '' });
       setImage(null);
-
-      // Refresh ads
       await fetchData();
       setActiveTab('ads');
     } catch (error: any) {
-      console.error('Error creating ad:', error);
       alert(error.response?.data?.message || 'Failed to create ad');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading your dashboard...</p>
-        </div>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-slate-800 border-t-emerald-500 rounded-full animate-spin mx-auto mb-6 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+        <p className="text-slate-400 text-lg animate-pulse tracking-widest uppercase text-sm font-semibold">Loading Portal...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans pb-24 relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none"></div>
+
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+      <div className="glass-dark border-b border-white/5 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-              <p className="text-slate-600 mt-1">Welcome back, {user?.username}!</p>
+              <div className="inline-block px-3 py-1 mb-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest">
+                Seller Dashboard
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">Welcome, {user?.username}</h1>
+              <p className="text-slate-400 mt-3 text-lg">Manage your commercial assets and active operations.</p>
             </div>
+            
             <Link
               href="/explore"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+              className="bg-slate-800 border border-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2"
             >
-              Browse Products
+              Back to Market
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setActiveTab('ads')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'ads'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              My Ads ({ads.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('create')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'create'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              Create New Ad
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
+        {/* Navigation Tabs */}
+        <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border border-white/5 p-2 mb-10 inline-flex shadow-lg flex-wrap gap-2 sm:gap-0">
+          <button
+            onClick={() => setActiveTab('ads')}
+            className={`px-8 py-3 rounded-xl font-bold transition-all duration-300 ${
+              activeTab === 'ads' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+             Your Assets <span className="ml-2 bg-black/20 px-2 py-0.5 rounded-full text-xs">{ads.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('create')}
+            className={`px-8 py-3 rounded-xl font-bold transition-all duration-300 ${
+              activeTab === 'create' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            + Create Listing
+          </button>
         </div>
 
         {activeTab === 'ads' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-[fadeIn_0.4s_ease-out_forwards]">
             {ads.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-slate-100">
-                <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m8-5v2m0 0v2m0-2h2m-2 0h-2" />
-                  </svg>
+              <div className="text-center py-20 px-4 glass-dark rounded-3xl border border-white/5 border-dashed">
+                <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+                  <svg className="w-10 h-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">No ads yet</h3>
-                <p className="text-slate-600 mb-6">Create your first ad to start selling</p>
+                <h3 className="text-2xl font-bold text-white mb-2">No Active Assets</h3>
+                <p className="text-slate-400 mb-8 max-w-md mx-auto">You have not posted any assets to the marketplace yet.</p>
                 <button
                   onClick={() => setActiveTab('create')}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                  className="bg-blue-600 text-white px-6 py-3 rounded-full font-bold hover:bg-blue-700 transition-colors shadow-lg"
                 >
                   Create Your First Ad
                 </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ads.map((ad) => (
-                  <div key={ad.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    {/* Image */}
-                    <div className="relative h-48 bg-slate-100">
+                {ads.map((ad, idx) => (
+                  <div key={ad.id} className="bg-slate-900 rounded-3xl overflow-hidden border border-white/5 shadow-xl group hover:border-emerald-500/30 transition-all">
+                     <div className="h-48 relative overflow-hidden bg-slate-800">
                       {ad.image ? (
-                        <img
-                          src={`http://localhost:5000/${ad.image}`}
-                          alt={ad.title}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={`http://localhost:5000/${ad.image}`} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400">
-                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
+                        <div className="w-full h-full flex items-center justify-center text-slate-600">
+                           <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </div>
                       )}
-
-                      {/* Status Badge */}
-                      <div className="absolute top-3 left-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(ad.status)}`}>
-                          {ad.status.charAt(0).toUpperCase() + ad.status.slice(1)}
+                      
+                      {/* Status Overlay Badge */}
+                      <div className="absolute top-4 left-4">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border shadow-lg backdrop-blur-md ${
+                          ad.status === 'published' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                          ad.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          'bg-slate-500/20 text-slate-400 border-slate-500/30'
+                        }`}>
+                          {ad.status}
                         </span>
-                      </div>
-
-                      {/* Sponsored Badge */}
-                      {ad.sponsored && (
-                        <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                          ? Sponsored
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
-                        {ad.title}
-                      </h3>
-
-                      <p className="text-slate-600 text-sm mb-3 line-clamp-2">
-                        {ad.description}
-                      </p>
-
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-lg font-bold text-slate-900">
-                          Rs. {ad.price?.toLocaleString() || 'Contact for Price'}
-                        </span>
-                        <div className="flex items-center text-slate-500 text-sm">
-                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          {ad.views}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm text-slate-500">
-                        <span>{ad.category?.name}</span>
-                        <span>{new Date(ad.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="px-4 pb-4">
-                      <Link
-                        href={`/ad/${ad.id}`}
-                        className="w-full bg-slate-100 text-slate-700 py-2 px-4 rounded-lg font-semibold text-center hover:bg-slate-200 transition-colors block"
-                      >
-                        View Details
-                      </Link>
+                    <div className="p-6">
+                      <h3 className="font-bold text-white text-lg mb-2 line-clamp-1">{ad.title}</h3>
+                      <p className="text-slate-400 text-sm line-clamp-2 mb-6 h-10">{ad.description}</p>
+                      
+                      <div className="bg-slate-950 rounded-xl p-4 border border-white/5 mb-6 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-1">Price</p>
+                          <p className="text-white font-bold">Rs. {ad.price?.toLocaleString() || 'N/A'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold mb-1">Views</p>
+                          <p className="text-white font-bold">{ad.views}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                         <Link href={`/ad/${ad.id}`} className="flex-1 bg-white/5 border border-white/10 text-white py-3 rounded-xl font-bold hover:bg-white/10 transition-colors text-center text-sm">
+                            Manage
+                         </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -307,134 +221,122 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Create Ad Tab - Upgraded Form */}
         {activeTab === 'create' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Create New Ad</h2>
-              <p className="text-slate-600">Fill in the details to post your product</p>
+          <div className="max-w-4xl mx-auto glass-dark rounded-3xl border border-white/5 p-8 sm:p-12 shadow-2xl animate-[fadeIn_0.4s_ease-out_forwards]">
+            <div className="mb-10 border-b border-white/10 pb-6">
+              <h2 className="text-3xl font-bold text-white mb-2">Publish Asset</h2>
+              <p className="text-slate-400 font-medium">Inject a new listing into the global database.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Title *
-                  </label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Title *</label>
                   <input
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                    placeholder="Enter product title"
+                    className="w-full px-5 py-4 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner"
+                    placeholder="Enter commercial title"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Price (Rs.)
-                  </label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Value (Rs.)</label>
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                    placeholder="Enter price"
+                    className="w-full px-5 py-4 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner"
+                    placeholder="E.g. 5000"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Description</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                  placeholder="Describe your product..."
+                  rows={5}
+                  className="w-full px-5 py-4 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner resize-none"
+                  placeholder="Provide comprehensive details about the item..."
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Category *
-                  </label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Classification *</label>
                   <select
                     name="categoryId"
                     value={formData.categoryId}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                    className="w-full px-5 py-4 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner appearance-none cursor-pointer"
                   >
                     <option value="">Select Category</option>
                     {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
+                      <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    City *
-                  </label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Region *</label>
                   <select
                     name="cityId"
                     value={formData.cityId}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                    className="w-full px-5 py-4 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner appearance-none cursor-pointer"
                   >
                     <option value="">Select City</option>
                     {cities.map((city) => (
-                      <option key={city.id} value={city.id}>
-                        {city.name}
-                      </option>
+                      <option key={city.id} value={city.id}>{city.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Product Image
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                />
-                <p className="text-xs text-slate-500 mt-1">Upload a high-quality image of your product</p>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Primary Image</label>
+                <div className="w-full px-5 py-8 bg-slate-900/50 rounded-xl border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
+                  <svg className="w-8 h-8 text-slate-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 file:cursor-pointer pb-2 max-w-sm mx-auto"
+                  />
+                  <p className="text-xs text-slate-600 mt-2">JPG, PNG, WEBP (Max 5MB)</p>
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end gap-4 pt-6 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setActiveTab('ads')}
-                  className="px-6 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                  className="px-8 py-4 rounded-full bg-slate-800 text-white font-bold hover:bg-slate-700 transition-colors"
                 >
-                  Cancel
+                  Discard
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-4 rounded-full bg-blue-600 text-white font-bold hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all disabled:opacity-50 disabled:-cursor-not-allowed flex items-center justify-center min-w-[180px]"
                 >
                   {submitting ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Creating Ad...
+                       <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                       Injecting...
                     </div>
                   ) : (
-                    'Create Ad'
+                    'Submit to DB'
                   )}
                 </button>
               </div>
@@ -442,6 +344,10 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+       <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}} />
     </div>
   );
 }

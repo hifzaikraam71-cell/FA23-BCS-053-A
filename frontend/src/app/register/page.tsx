@@ -26,151 +26,145 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      return setError('Passwords do not match');
+    }
+
     setLoading(true);
     setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
 
     try {
       await register(formData.username, formData.email, formData.password);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-slate-50 flex items-center justify-center px-4 py-12">
-      {/* Background decorations */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-indigo-200 opacity-20 blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-blue-200 opacity-20 blur-3xl"></div>
-      </div>
-
-      <div className="relative w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 text-lg font-bold text-white shadow-md">
-              A
-            </div>
-            <span className="text-2xl font-bold text-slate-900">AdFlow Pro</span>
-          </Link>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h1>
-          <p className="text-slate-600">Join our marketplace community</p>
-        </div>
-
-        {/* Register Form */}
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-600 text-sm">{error}</p>
+    <div className="min-h-screen bg-slate-950 flex font-sans">
+      {/* Left Panel - Registration Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative overflow-hidden z-10">
+        <div className="w-full max-w-md relative z-10">
+          <div className="mb-10 lg:hidden text-center">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 font-bold text-white shadow-lg">
+                A
               </div>
-            )}
+            </Link>
+          </div>
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-2">
-                Username
-              </label>
+          <div className="mb-8 text-center lg:text-left">
+            <div className="glass-dark px-4 py-1.5 rounded-full inline-block mb-4 border border-white/10">
+              <span className="text-emerald-400 text-xs font-bold tracking-widest uppercase">Member Onboarding</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Create your account</h2>
+            <p className="text-slate-400">Join the premier trading network today.</p>
+          </div>
+
+          {error && (
+            <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3 backdrop-blur-sm">
+              <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Username</label>
               <input
                 type="text"
-                id="username"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 bg-slate-50 focus:bg-white"
+                className="w-full bg-slate-900 border border-slate-800 text-white px-5 py-3.5 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none placeholder:text-slate-600 shadow-inner"
                 placeholder="Choose a username"
               />
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                Email Address
-              </label>
+            <div className="space-y-1.5">
+               <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Email Address</label>
               <input
                 type="email"
-                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 bg-slate-50 focus:bg-white"
-                placeholder="Enter your email"
+                className="w-full bg-slate-900 border border-slate-800 text-white px-5 py-3.5 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none placeholder:text-slate-600 shadow-inner"
+                placeholder="name@company.com"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 bg-slate-50 focus:bg-white"
-                placeholder="Create a password"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-slate-900 border border-slate-800 text-white px-5 py-3.5 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none placeholder:text-slate-600 shadow-inner"
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-2">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 bg-slate-50 focus:bg-white"
-                placeholder="Confirm your password"
-              />
+              <div className="space-y-1.5">
+               <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Confirm</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-slate-900 border border-slate-800 text-white px-5 py-3.5 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none placeholder:text-slate-600 shadow-inner"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-white text-slate-900 py-4 px-4 rounded-xl font-bold hover:bg-slate-200 transition-all duration-200 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] disabled:opacity-50 mt-6"
             >
               {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Creating Account...
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Creating Node...</span>
                 </div>
               ) : (
-                'Create Account'
+                'Initialize Account'
               )}
             </button>
           </form>
 
-          {/* Login Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-slate-600">
-              Already have an account?{' '}
-              <Link href="/login" className="text-indigo-600 hover:text-indigo-700 font-semibold">
-                Sign in here
-              </Link>
-            </p>
+          <div className="mt-8 text-center text-sm text-slate-500">
+            Already registered?{' '}
+            <Link href="/login" className="font-semibold text-white hover:text-blue-300 transition-colors">
+              Access Dashboard
+            </Link>
           </div>
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-slate-500 hover:text-slate-700">
-            ← Back to Home
-          </Link>
+      {/* Right Panel - Abstract Graphic */}
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-slate-900 border-l border-white/5 flex-col justify-end p-12">
+        <div className="absolute inset-0">
+          <div className="absolute bottom-0 -right-1/4 w-[800px] h-[800px] bg-emerald-600 rounded-full mix-blend-color-dodge filter blur-[100px] opacity-20 animate-blob"></div>
+          <div className="absolute top-0 -left-1/4 w-[600px] h-[600px] bg-blue-600 rounded-full mix-blend-color-dodge filter blur-[100px] opacity-20 animate-blob" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay grayscale"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+        </div>
+
+        <div className="relative z-10 max-w-md ml-auto text-right">
+          <h2 className="text-4xl font-bold text-white mb-4 leading-tight">Your gateway to the global exchange.</h2>
+          <p className="text-slate-400 text-lg">Instant access to verified buyers, premium sellers, and live tracking of your commercial assets.</p>
         </div>
       </div>
     </div>

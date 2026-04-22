@@ -25,27 +25,14 @@ interface Ad {
   title: string;
   description: string;
   image?: string;
-  images?: string[];
   price?: number;
   status: string;
   sponsored: boolean;
   views: number;
   createdAt: string;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-  };
-  category?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-  city?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
+  user?: { id: number; username: string; email: string };
+  category?: { id: number; name: string; slug: string };
+  city?: { id: number; name: string; slug: string };
 }
 
 export default function Explore() {
@@ -74,7 +61,6 @@ export default function Explore() {
         axios.get('http://localhost:5000/categories'),
         axios.get('http://localhost:5000/cities'),
       ]);
-
       setAds(adsRes.data.data || []);
       setCategories(categoriesRes.data || []);
       setCities(citiesRes.data || []);
@@ -94,7 +80,6 @@ export default function Explore() {
       const res = await axios.get(`http://localhost:5000/ads?${params}`);
       let adsData = res.data.data || [];
 
-      // Sort ads
       if (sortBy === 'price-low') {
         adsData = adsData.sort((a: Ad, b: Ad) => (a.price || 0) - (b.price || 0));
       } else if (sortBy === 'price-high') {
@@ -102,12 +87,8 @@ export default function Explore() {
       } else if (sortBy === 'views') {
         adsData = adsData.sort((a: Ad, b: Ad) => b.views - a.views);
       } else {
-        // recent
-        adsData = adsData.sort((a: Ad, b: Ad) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        adsData = adsData.sort((a: Ad, b: Ad) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
-
       setAds(adsData);
     } catch (error) {
       console.error('Error fetching ads:', error);
@@ -124,220 +105,207 @@ export default function Explore() {
     return `Rs. ${price.toLocaleString()}`;
   };
 
-  const getCategoryIcon = (categoryName: string) => {
-    const icons: { [key: string]: string } = {
-      'Electronics': '??',
-      'Fashion': '??',
-      'Home': '??',
-      'Vehicles': '??',
-      'Books': '??',
-      'Sports': '?',
-      'Jobs': '??',
-      'Services': '???',
-    };
-    return icons[categoryName] || '??';
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading amazing products...</p>
-        </div>
+     return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-slate-800 border-t-blue-500 rounded-full animate-spin mx-auto mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+        <p className="text-slate-400 text-lg animate-pulse tracking-widest uppercase text-sm font-semibold">Loading Market...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans relative overflow-hidden pb-24">
+      {/* Background Orbs */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-1/4 left-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+      {/* Header Banner */}
+      <div className="glass-dark border-b border-white/5 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Explore Products</h1>
-              <p className="text-slate-600 mt-1">Discover amazing products from our marketplace</p>
+              <div className="inline-block px-3 py-1 mb-3 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
+                Marketplace Hub
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">Explore the network.</h1>
+              <p className="text-slate-400 mt-3 text-lg max-w-xl">Discover premium listings from verified sellers across the global marketplace.</p>
             </div>
             {user && (
               <Link
                 href="/dashboard"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                className="bg-white text-slate-900 px-8 py-4 rounded-full font-bold hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] self-start md:self-auto flex items-center gap-2"
               >
-                Post Your Ad
+                <span>+ Post New Listing</span>
               </Link>
             )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        {/* Filters Area */}
+        <div className="glass-dark rounded-3xl border border-white/5 p-6 mb-10 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
             {/* Search */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Search Products</label>
-              <div className="relative">
+              <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Search Keywords</label>
+              <div className="relative group">
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by title or description..."
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                  placeholder="Search by title, brand, or tag..."
+                  className="w-full pl-11 pr-4 py-3.5 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white placeholder-slate-500 outline-none shadow-inner"
                 />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
               </div>
             </div>
 
             {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+              <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Category</label>
               <select
                 value={selectedCategory || ''}
                 onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full px-4 py-3.5 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner appearance-none cursor-pointer"
               >
-                <option value="">All Categories</option>
+                <option value="">All Regions</option>
                 {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {getCategoryIcon(category.name)} {category.name}
-                  </option>
+                  <option key={category.id} value={category.id}>{category.name}</option>
                 ))}
               </select>
             </div>
 
             {/* Sort */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Sort By</label>
+              <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide ml-1">Sort Data</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full px-4 py-3.5 bg-slate-900 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-white outline-none shadow-inner appearance-none cursor-pointer"
               >
                 <option value="recent">Most Recent</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="views">Most Viewed</option>
+                <option value="price-low">Price: Ascending</option>
+                <option value="price-high">Price: Descending</option>
+                <option value="views">Trending (Views)</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-slate-600">
-            Showing {filteredAds.length} product{filteredAds.length !== 1 ? 's' : ''}
-            {selectedCategory && ` in ${categories.find(c => c.id === selectedCategory)?.name}`}
+        {/* Results Info */}
+        <div className="mb-8 flex items-center justify-between">
+          <p className="text-slate-400 font-medium">
+            Indexing <span className="text-white font-bold">{filteredAds.length}</span> active assets
+            {selectedCategory && ` in target sector`}
           </p>
+          <div className="flex gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span className="w-2 h-2 rounded-full bg-slate-700"></span>
+          </div>
         </div>
 
         {/* Products Grid */}
         {filteredAds.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m8-5v2m0 0v2m0-2h2m-2 0h-2" />
-              </svg>
+          <div className="text-center py-20 px-4 glass-dark rounded-3xl border border-white/5">
+             <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+              <svg className="w-10 h-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
             </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">No products found</h3>
-            <p className="text-slate-600 mb-6">Try adjusting your search or filters</p>
+            <h3 className="text-2xl font-bold text-white mb-2">No matching assets</h3>
+            <p className="text-slate-400 mb-8 max-w-md mx-auto">Your filter parameters yielded zero results from the live database.</p>
             <button
-              onClick={() => {
-                setSearch('');
-                setSelectedCategory(null);
-                setSelectedCity(null);
-              }}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              onClick={() => { setSearch(''); setSelectedCategory(null); setSelectedCity(null); }}
+              className="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 transition-colors shadow-lg"
             >
-              Clear Filters
+              Reset All Filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAds.map((ad) => (
-              <div
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+            {filteredAds.map((ad, idx) => (
+              <Link
+                href={`/ad/${ad.id}`}
                 key={ad.id}
-                className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-200 group"
+                className={`group block rounded-3xl glass-dark border border-white/5 shadow-xl hover:shadow-[0_0_40px_rgba(59,130,246,0.15)] hover:border-blue-500/30 transition-all duration-500 transform hover:-translate-y-2 opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]`}
+                style={{ animationDelay: `${(idx % 10) * 0.05}s` }}
               >
-                {/* Image */}
-                <div className="relative h-48 bg-slate-100">
+                {/* Image Handle */}
+                <div className="aspect-[4/3] relative overflow-hidden rounded-t-3xl bg-slate-900">
                   {ad.image ? (
                     <img
                       src={`http://localhost:5000/${ad.image}`}
                       alt={ad.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600">
+                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
                   )}
 
-                  {/* Sponsored Badge */}
+                  {/* Top floating badges */}
+                  <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+                    {ad.category && (
+                      <div className="bg-slate-950/80 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/10 shadow-lg">
+                        {ad.category.name}
+                      </div>
+                    )}
+                  </div>
                   {ad.sponsored && (
-                    <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                      ? Sponsored
-                    </div>
-                  )}
-
-                  {/* Category Badge */}
-                  {ad.category && (
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-slate-700 px-2 py-1 rounded-full text-xs font-medium">
-                      {getCategoryIcon(ad.category.name)} {ad.category.name}
-                    </div>
+                     <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-lg">
+                        Pro
+                     </div>
                   )}
                 </div>
 
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                    {ad.title}
-                  </h3>
+                {/* Content Block */}
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-white text-lg line-clamp-1 pr-4 group-hover:text-blue-400 transition-colors">
+                      {ad.title}
+                    </h3>
+                  </div>
 
-                  <p className="text-slate-600 text-sm mb-3 line-clamp-2">
+                  <p className="text-slate-400 text-sm mb-5 line-clamp-2 leading-relaxed">
                     {ad.description}
                   </p>
 
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg font-bold text-slate-900">
-                      {formatPrice(ad.price)}
-                    </span>
-                    <div className="flex items-center text-slate-500 text-sm">
-                      <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      {ad.views}
+                  <div className="flex items-end justify-between mt-auto">
+                    <div>
+                      <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Value</p>
+                      <span className="text-xl font-extrabold text-white">
+                        {formatPrice(ad.price)}
+                      </span>
+                    </div>
+                    
+                    <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center group-hover:bg-blue-600 group-hover:border-blue-500 transition-colors text-white">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between text-sm text-slate-500">
-                    <span>{ad.city?.name}</span>
-                    <span>{new Date(ad.createdAt).toLocaleDateString()}</span>
+                  
+                  {/* Subtle footer line */}
+                  <div className="mt-5 flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-white/5">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      {ad.city?.name || 'Global'}
+                    </span>
+                    <span>{ad.views} views</span>
                   </div>
                 </div>
-
-                {/* Action Button */}
-                <div className="px-4 pb-4">
-                  <Link
-                    href={`/ad/${ad.id}`}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-4 rounded-lg font-semibold text-center hover:shadow-md transition-all duration-200 block"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+      `}} />
     </div>
   );
 }
