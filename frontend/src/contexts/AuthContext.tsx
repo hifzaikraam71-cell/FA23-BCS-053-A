@@ -5,15 +5,16 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 interface User {
-  _id: string;
+  id: number;
   username: string;
+  email: string;
   role: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (identifier: string, password: string) => Promise<void>;
-  register: (username: string, password: string, email: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,31 +28,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        setUser({ _id: decoded._id, username: decoded.username || '', role: decoded.role });
-        axios.defaults.headers.common['Authorization'] = token;
+        setUser({ id: decoded.id, username: decoded.username || '', email: decoded.email, role: decoded.role });
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       } catch (err) {
         localStorage.removeItem('token');
       }
     }
   }, []);
 
-  const login = async (identifier: string, password: string) => {
-    const res = await axios.post('http://localhost:5000/login', { identifier, password });
+  const login = async (email: string, password: string) => {
+    const res = await axios.post('http://localhost:5000/auth/login', { email, password });
     const token = res.data.token;
     localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = token;
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     const decoded: any = jwtDecode(token);
-    setUser({ _id: decoded._id, username: decoded.username || '', role: decoded.role });
+    setUser({ id: decoded.id, username: decoded.username, email: decoded.email, role: decoded.role });
   };
 
-  const register = async (username: string, password: string, email: string) => {
-    await axios.post('http://localhost:5000/register', { username, password, email });
+  const register = async (username: string, email: string, password: string) => {
+    const res = await axios.post('http://localhost:5000/auth/register', { username, email, password });
+    const token = res.data.token;
+    localStorage.setItem('token', token);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    const decoded: any = jwtDecode(token);
+    setUser({ id: decoded.id, username: decoded.username, email: decoded.email, role: decoded.role });
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    setUser(null);
     delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
   };
 
   return (
@@ -63,6 +69,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };

@@ -1,239 +1,793 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const stripe = require('stripe')('your-stripe-secret-key'); // Replace with actual key
+const stripe = require('stripe')('sk_test_your_key_here');
 const multer = require('multer');
 const sharp = require('sharp');
 const cron = require('node-cron');
+const { Sequelize, DataTypes } = require('sequelize');
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ limit: '50mb' }));
+app.use('/uploads', express.static('uploads'));
 
-// MongoDB connect
-mongoose.connect('mongodb://127.0.0.1:27017/adflow')
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
-
-// User Schema
-const UserSchema = new mongoose.Schema({
-  username: { type: String, unique: true },
-  password: String,
-  email: String,
-  role: { type: String, default: 'user' } // user or admin
+// Database Configuration
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: 'database.sqlite',
+  logging: false,
 });
 
-const User = mongoose.model("User", UserSchema);
+// ===== DATABASE MODELS =====
 
-// Ad Schema
-const AdSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  image: String,
-  category: String,
-  status: { type: String, default: "pending" }, // pending, approved, rejected
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  sponsored: { type: Boolean, default: false },
-  price: Number,
-  schedule: Date, // when to publish
-  views: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
+// User Model
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  username: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  role: {
+    type: DataTypes.ENUM('user', 'admin', 'moderator'),
+    defaultValue: 'user',
+  },
+  profileImage: DataTypes.STRING,
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  timestamps: true,
+  tableName: 'users',
 });
 
-const Ad = mongoose.model("Ad", AdSchema);
-
-// Payment Schema
-const PaymentSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  ad: { type: mongoose.Schema.Types.ObjectId, ref: 'Ad' },
-  amount: Number,
-  status: String, // success, failed
-  stripeId: String
+// Category Model
+const Category = sequelize.define('Category', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
+  },
+  slug: {
+    type: DataTypes.STRING,
+    unique: true,
+  },
+  description: DataTypes.TEXT,
+  icon: DataTypes.STRING,
+}, {
+  timestamps: true,
+  tableName: 'categories',
 });
 
-const Payment = mongoose.model("Payment", PaymentSchema);
+// City Model
+const City = sequelize.define('City', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
+  },
+  slug: {
+    type: DataTypes.STRING,
+    unique: true,
+  },
+  country: DataTypes.STRING,
+}, {
+  timestamps: true,
+  tableName: 'cities',
+});
 
-// Middleware for auth
-const auth = (req, res, next) => {
-  const token = req.header('Authorization');
-  if (!token) return res.status(401).send('Access denied');
-  try {
-    const verified = jwt.verify(token, 'secretkey');
-    req.user = verified;
+// Package Model
+const Package = sequelize.define('Package', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  price: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+  },
+  duration: DataTypes.INTEGER, // in days
+  features: DataTypes.JSON,
+  visibility: {
+    type: DataTypes.ENUM('standard', 'premium', 'featured'),
+    defaultValue: 'standard',
+  },
+}, {
+  timestamps: true,
+  tableName: 'packages',
+});
+
+// Ad Model
+const Ad = sequelize.define('Ad', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  description: DataTypes.TEXT,
+  image: DataTypes.STRING,
+  images: DataTypes.JSON,
+  price: DataTypes.DECIMAL(10, 2),
+  status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'published', 'archived'),
+    defaultValue: 'pending',
+  },
+  sponsored: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  views: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  schedule: DataTypes.DATE,
+  expiryDate: DataTypes.DATE,
+  publishedAt: DataTypes.DATE,
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id',
+    },
+  },
+  categoryId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Category,
+      key: 'id',
+    },
+  },
+  cityId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: City,
+      key: 'id',
+    },
+  },
+  packageId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Package,
+      key: 'id',
+    },
+    allowNull: true,
+  },
+}, {
+  timestamps: true,
+  tableName: 'ads',
+});
+
+// Payment Model
+const Payment = sequelize.define('Payment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id',
+    },
+  },
+  adId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Ad,
+      key: 'id',
+    },
+  },
+  amount: DataTypes.DECIMAL(10, 2),
+  currency: {
+    type: DataTypes.STRING,
+    defaultValue: 'USD',
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'),
+    defaultValue: 'pending',
+  },
+  transactionId: DataTypes.STRING,
+  paymentMethod: DataTypes.STRING,
+}, {
+  timestamps: true,
+  tableName: 'payments',
+});
+
+// Analytics Model
+const Analytics = sequelize.define('Analytics', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  adId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Ad,
+      key: 'id',
+    },
+  },
+  views: DataTypes.INTEGER,
+  clicks: DataTypes.INTEGER,
+  impressions: DataTypes.INTEGER,
+  conversions: DataTypes.INTEGER,
+  date: DataTypes.DATE,
+}, {
+  timestamps: true,
+  tableName: 'analytics',
+});
+
+// ===== DATABASE ASSOCIATIONS =====
+
+User.hasMany(Ad, { foreignKey: 'userId' });
+Ad.belongsTo(User, { foreignKey: 'userId' });
+
+Category.hasMany(Ad, { foreignKey: 'categoryId' });
+Ad.belongsTo(Category, { foreignKey: 'categoryId' });
+
+City.hasMany(Ad, { foreignKey: 'cityId' });
+Ad.belongsTo(City, { foreignKey: 'cityId' });
+
+Package.hasMany(Ad, { foreignKey: 'packageId' });
+Ad.belongsTo(Package, { foreignKey: 'packageId' });
+
+User.hasMany(Payment, { foreignKey: 'userId' });
+Payment.belongsTo(User, { foreignKey: 'userId' });
+
+Ad.hasMany(Payment, { foreignKey: 'adId' });
+Payment.belongsTo(Ad, { foreignKey: 'adId' });
+
+Ad.hasMany(Analytics, { foreignKey: 'adId' });
+Analytics.belongsTo(Ad, { foreignKey: 'adId' });
+
+// ===== JWT Authentication Middleware =====
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid token' });
+    }
+    req.user = user;
     next();
-  } catch (err) {
-    res.status(400).send('Invalid token');
+  });
+};
+
+// ===== AUTH ROUTES =====
+
+// Register
+app.post('/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Email already registered' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: { id: user.id, username, email, role: user.role },
+      token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Registration failed', error: error.message });
+  }
+});
+
+// Login
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password required' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      user: { id: user.id, username: user.username, email, role: user.role },
+      token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Login failed', error: error.message });
+  }
+});
+
+
+// ===== AD CRUD ROUTES =====
+
+// Create Ad
+app.post('/ads', authenticateToken, async (req, res) => {
+  try {
+    const { title, description, price, categoryId, cityId, packageId, schedule } = req.body;
+
+    if (!title || !categoryId || !cityId) {
+      return res.status(400).json({ message: 'Title, category, and city are required' });
+    }
+
+    const ad = await Ad.create({
+      title,
+      description,
+      price,
+      categoryId,
+      cityId,
+      packageId,
+      schedule,
+      userId: req.user.id,
+      status: 'pending',
+    });
+
+    res.status(201).json({
+      message: 'Ad created successfully',
+      ad,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to create ad', error: error.message });
+  }
+});
+
+// Get All Ads (with filters)
+app.get('/ads', async (req, res) => {
+  try {
+    const { categoryId, cityId, status, page = 1, limit = 12 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = { status: 'published' };
+    if (categoryId) where.categoryId = categoryId;
+    if (cityId) where.cityId = cityId;
+
+    const ads = await Ad.findAndCountAll({
+      where,
+      include: [
+        { model: User, attributes: ['id', 'username', 'email'] },
+        { model: Category, attributes: ['id', 'name', 'slug'] },
+        { model: City, attributes: ['id', 'name', 'slug'] },
+      ],
+      offset,
+      limit: parseInt(limit),
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json({
+      data: ads.rows,
+      total: ads.count,
+      pages: Math.ceil(ads.count / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch ads', error: error.message });
+  }
+});
+
+// Get Single Ad
+app.get('/ads/:id', async (req, res) => {
+  try {
+    const ad = await Ad.findByPk(req.params.id, {
+      include: [
+        { model: User, attributes: ['id', 'username', 'email'] },
+        { model: Category, attributes: ['id', 'name'] },
+        { model: City, attributes: ['id', 'name'] },
+        { model: Package, attributes: ['id', 'name', 'price'] },
+      ],
+    });
+
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    // Increment views
+    ad.views += 1;
+    await ad.save();
+
+    res.json(ad);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch ad', error: error.message });
+  }
+});
+
+// Update Ad
+app.put('/ads/:id', authenticateToken, async (req, res) => {
+  try {
+    const ad = await Ad.findByPk(req.params.id);
+
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    if (ad.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await ad.update(req.body);
+
+    res.json({
+      message: 'Ad updated successfully',
+      ad,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update ad', error: error.message });
+  }
+});
+
+// Delete Ad
+app.delete('/ads/:id', authenticateToken, async (req, res) => {
+  try {
+    const ad = await Ad.findByPk(req.params.id);
+
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    if (ad.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await ad.destroy();
+
+    res.json({
+      message: 'Ad deleted successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete ad', error: error.message });
+  }
+});
+
+
+// ===== CATEGORY ROUTES =====
+
+app.get('/categories', async (req, res) => {
+  try {
+    const categories = await Category.findAll();
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch categories', error: error.message });
+  }
+});
+
+app.post('/categories', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can create categories' });
+    }
+
+    const { name, description } = req.body;
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+
+    const category = await Category.create({
+      name,
+      slug,
+      description,
+    });
+
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to create category', error: error.message });
+  }
+});
+
+// ===== CITY ROUTES =====
+
+app.get('/cities', async (req, res) => {
+  try {
+    const cities = await City.findAll();
+    res.json(cities);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch cities', error: error.message });
+  }
+});
+
+app.post('/cities', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can create cities' });
+    }
+
+    const { name, country } = req.body;
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+
+    const city = await City.create({
+      name,
+      slug,
+      country,
+    });
+
+    res.status(201).json(city);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to create city', error: error.message });
+  }
+});
+
+// ===== PACKAGE ROUTES =====
+
+app.get('/packages', async (req, res) => {
+  try {
+    const packages = await Package.findAll();
+    res.json(packages);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch packages', error: error.message });
+  }
+});
+
+// ===== ANALYTICS ROUTES =====
+
+app.get('/analytics/ad/:adId', authenticateToken, async (req, res) => {
+  try {
+    const ad = await Ad.findByPk(req.params.adId);
+
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    if (ad.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const analytics = await Analytics.findAll({
+      where: { adId: req.params.adId },
+      order: [['date', 'DESC']],
+    });
+
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch analytics', error: error.message });
+  }
+});
+
+// ===== PAYMENT ROUTES =====
+
+app.post('/payments', authenticateToken, async (req, res) => {
+  try {
+    const { adId, amount, currency = 'USD' } = req.body;
+
+    const ad = await Ad.findByPk(adId);
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    // Create payment record
+    const payment = await Payment.create({
+      userId: req.user.id,
+      adId,
+      amount,
+      currency,
+      status: 'pending',
+    });
+
+    res.status(201).json({
+      message: 'Payment initiated',
+      payment,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Payment failed', error: error.message });
+  }
+});
+
+// Health check
+app.get('/', (req, res) => {
+  res.json({ message: 'Backend Working ✅', status: 'online' });
+});
+
+// ===== DATABASE SYNC & SERVER START =====
+
+const PORT = process.env.PORT || 5000;
+
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ MySQL Connected');
+
+    await sequelize.sync({ alter: false });
+    console.log('✅ Database Models Synchronized');
+
+    // Seed data
+    await seedData();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ Database Connection Failed:', error.message);
+    process.exit(1);
   }
 };
 
-// Multer for file upload
-const upload = multer({ dest: 'uploads/' });
-
-// Routes
-
-// Register
-app.post('/register', async (req, res) => {
-  const { username, password, email } = req.body;
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  const user = new User({ username, password: hashedPassword, email });
-  await user.save();
-  res.send({ message: 'User registered' });
-});
-
-// Create Admin (for setup)
-app.post('/createadmin', async (req, res) => {
-  const { username, password, email } = req.body;
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  const user = new User({ username, password: hashedPassword, email, role: 'admin' });
-  await user.save();
-  res.send({ message: 'Admin created' });
-});
-
-// Login (demo-friendly: accept any email/username)
-app.post('/login', async (req, res) => {
-  const { identifier, password } = req.body;
-  if (!identifier) return res.status(400).send('Identifier required');
-
-  let user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] });
-
-  if (!user) {
-    const generatedPassword = password || 'demo123';
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(generatedPassword, salt);
-    const username = identifier.includes('@') ? identifier.split('@')[0] : identifier;
-    user = new User({ username, email: identifier, password: hashedPassword });
-    await user.save();
-  }
-
-  const token = jwt.sign({ _id: user._id, username: user.username, role: user.role }, 'secretkey');
-  res.send({ token });
-});
-
-// Test
-app.get('/', (req, res) => {
-  res.send("Backend Working ✅");
-});
-
-// Create Ad
-app.post('/ads', auth, upload.single('image'), async (req, res) => {
-  const { title, description, category, sponsored, price, schedule } = req.body;
-  let image = '';
-  if (req.file) {
-    // Normalize image
-    const buffer = await sharp(req.file.path).resize(500, 500).jpeg().toBuffer();
-    image = buffer.toString('base64'); // or save to file
-  }
-  const newAd = new Ad({
-    title,
-    description,
-    image,
-    category,
-    user: req.user._id,
-    sponsored: sponsored === 'true',
-    price: parseFloat(price),
-    schedule: schedule ? new Date(schedule) : null
-  });
-  await newAd.save();
-  res.send(newAd);
-});
-
-// Get Ads
-app.get('/ads', async (req, res) => {
-  const ads = await Ad.find({ status: "approved" }).populate('user', 'username');
-  res.send(ads);
-});
-
-// Get Ad by ID
-app.get('/ads/:id', async (req, res) => {
-  const ad = await Ad.findById(req.params.id).populate('user', 'username');
-  if (!ad) return res.status(404).send('Ad not found');
-  res.send(ad);
-});
-
-// Get My Ads
-app.get('/myads', auth, async (req, res) => {
-  const ads = await Ad.find({ user: req.user._id });
-  res.send(ads);
-});
-
-// Admin: list all ads for moderation
-app.get('/admin/ads', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).send('Access denied');
-  const ads = await Ad.find().populate('user', 'username');
-  res.send(ads);
-});
-
-// Moderate Ad (Admin only)
-app.put('/ads/:id/moderate', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).send('Access denied');
-  const { status } = req.body;
-  const ad = await Ad.findByIdAndUpdate(req.params.id, { status }, { new: true });
-  res.send(ad);
-});
-
-// Pay for Ad
-app.post('/pay', auth, async (req, res) => {
-  const { adId, token } = req.body;
-  const ad = await Ad.findById(adId);
-  if (!ad) return res.status(404).send('Ad not found');
+const seedData = async () => {
   try {
-    const charge = await stripe.charges.create({
-      amount: ad.price * 100, // cents
-      currency: 'usd',
-      source: token,
-      description: `Payment for ad: ${ad.title}`
-    });
-    const payment = new Payment({
-      user: req.user._id,
-      ad: adId,
-      amount: ad.price,
-      status: 'success',
-      stripeId: charge.id
-    });
-    await payment.save();
-    ad.sponsored = true;
-    await ad.save();
-    res.send({ message: 'Payment successful' });
-  } catch (err) {
-    res.status(500).send('Payment failed');
+    // Create categories
+    const categories = [
+      { name: 'Electronics', slug: 'electronics', description: 'Phones, laptops, gadgets and more' },
+      { name: 'Fashion', slug: 'fashion', description: 'Clothing, shoes, accessories' },
+      { name: 'Home', slug: 'home', description: 'Furniture, appliances, decor' },
+      { name: 'Vehicles', slug: 'vehicles', description: 'Cars, bikes, parts' },
+      { name: 'Books', slug: 'books', description: 'Books, magazines, educational materials' },
+      { name: 'Sports', slug: 'sports', description: 'Sports equipment and gear' },
+      { name: 'Jobs', slug: 'jobs', description: 'Job postings and services' },
+      { name: 'Services', slug: 'services', description: 'Professional services' },
+    ];
+
+    for (const cat of categories) {
+      await Category.findOrCreate({
+        where: { name: cat.name },
+        defaults: cat,
+      });
+    }
+
+    // Create cities
+    const cities = [
+      { name: 'Karachi', slug: 'karachi', country: 'Pakistan' },
+      { name: 'Lahore', slug: 'lahore', country: 'Pakistan' },
+      { name: 'Islamabad', slug: 'islamabad', country: 'Pakistan' },
+      { name: 'Multan', slug: 'multan', country: 'Pakistan' },
+      { name: 'Peshawar', slug: 'peshawar', country: 'Pakistan' },
+      { name: 'Quetta', slug: 'quetta', country: 'Pakistan' },
+    ];
+
+    for (const city of cities) {
+      await City.findOrCreate({
+        where: { name: city.name },
+        defaults: city,
+      });
+    }
+
+    // Make first user admin
+    const firstUser = await User.findOne();
+    if (firstUser) {
+      await firstUser.update({ role: 'admin' });
+    }
+
+    // Create sample ads
+    const sampleAds = [
+      {
+        title: 'iPhone 15 Pro Max - Brand New',
+        description: 'Latest iPhone 15 Pro Max with 256GB storage. Still in warranty. Perfect condition.',
+        price: 250000,
+        categoryId: 1, // Electronics
+        cityId: 1, // Karachi
+        userId: 1,
+        status: 'published',
+      },
+      {
+        title: 'Designer Leather Jacket',
+        description: 'Premium leather jacket in excellent condition. Size M. Perfect for winter.',
+        price: 15000,
+        categoryId: 2, // Fashion
+        cityId: 2, // Lahore
+        userId: 1,
+        status: 'published',
+      },
+      {
+        title: 'Honda Civic 2018 - Low Mileage',
+        description: 'Well maintained Honda Civic 2018 with only 45,000 km. Single owner. All service records available.',
+        price: 3200000,
+        categoryId: 4, // Vehicles
+        cityId: 1, // Karachi
+        userId: 1,
+        status: 'published',
+      },
+      {
+        title: 'Modern Sofa Set - 7 Seater',
+        description: 'Beautiful modern sofa set for living room. Comfortable and stylish. 2 years old.',
+        price: 85000,
+        categoryId: 3, // Home
+        cityId: 3, // Islamabad
+        userId: 1,
+        status: 'published',
+      },
+      {
+        title: 'MacBook Pro M3 - 16GB RAM',
+        description: 'Apple MacBook Pro with M3 chip, 16GB RAM, 512GB SSD. Perfect for developers.',
+        price: 280000,
+        categoryId: 1, // Electronics
+        cityId: 2, // Lahore
+        userId: 1,
+        status: 'published',
+      },
+      {
+        title: 'Cricket Bat - Professional Grade',
+        description: 'English willow cricket bat. Used only few times. Comes with cover.',
+        price: 12000,
+        categoryId: 6, // Sports
+        cityId: 4, // Multan
+        userId: 1,
+        status: 'published',
+      },
+    ];
+
+    for (const ad of sampleAds) {
+      await Ad.findOrCreate({
+        where: { title: ad.title },
+        defaults: ad,
+      });
+    }
+
+    console.log('✅ Sample data seeded');
+  } catch (error) {
+    console.error('❌ Error seeding data:', error.message);
   }
-});
+};
 
-// Analytics
-app.get('/analytics', auth, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).send('Access denied');
-  const totalAds = await Ad.countDocuments();
-  const approvedAds = await Ad.countDocuments({ status: 'approved' });
-  const sponsoredAds = await Ad.countDocuments({ sponsored: true });
-  const totalViews = await Ad.aggregate([{ $group: { _id: null, total: { $sum: '$views' } } }]);
-  res.send({
-    totalAds,
-    approvedAds,
-    sponsoredAds,
-    totalViews: totalViews[0]?.total || 0
-  });
-});
+startServer();
 
-// Increment view
-app.post('/ads/:id/view', async (req, res) => {
-  await Ad.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } });
-  res.send({ message: 'View incremented' });
-});
-
-// Cron for scheduling
-cron.schedule('* * * * *', async () => { // every minute
-  const now = new Date();
-  await Ad.updateMany(
-    { schedule: { $lte: now }, status: 'pending' },
-    { status: 'approved' }
-  );
-});
-
-app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
-});
+module.exports = app;
