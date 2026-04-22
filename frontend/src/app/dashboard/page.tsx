@@ -19,6 +19,7 @@ interface Ad {
   category?: { id: number; name: string };
   city?: { id: number; name: string };
   image?: string;
+  user?: { id: number; username: string };
 }
 
 interface Category { id: number; name: string; slug: string }
