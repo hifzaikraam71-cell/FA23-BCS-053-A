@@ -35,7 +35,7 @@ export default function CityPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 rounded-[2rem] bg-white p-10 shadow-lg ring-1 ring-slate-200">
           <p className="text-sm uppercase tracking-[0.3em] text-blue-600">City</p>
-          <h1 className="mt-4 text-4xl font-semibold text-slate-900">{slug?.replace('-', ' ')}</h1>
+          <h1 className="mt-4 text-4xl font-semibold text-slate-900">{(Array.isArray(slug) ? slug[0] : slug)?.replace('-', ' ')}</h1>
           <p className="mt-3 text-slate-600">Featured and active ads from this local market area.</p>
         </div>
 
