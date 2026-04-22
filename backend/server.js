@@ -25,6 +25,21 @@ const sequelize = new Sequelize({
   logging: false,
 });
 
+// Multer Configuration for Ad Images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`);
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
 // ===== DATABASE MODELS =====
 
 // User Model
@@ -260,14 +275,14 @@ const Analytics = sequelize.define('Analytics', {
 
 // ===== DATABASE ASSOCIATIONS =====
 
-User.hasMany(Ad, { foreignKey: 'userId' });
-Ad.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Ad, { foreignKey: 'userId', as: 'ads' });
+Ad.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-Category.hasMany(Ad, { foreignKey: 'categoryId' });
-Ad.belongsTo(Category, { foreignKey: 'categoryId' });
+Category.hasMany(Ad, { foreignKey: 'categoryId', as: 'ads' });
+Ad.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 
-City.hasMany(Ad, { foreignKey: 'cityId' });
-Ad.belongsTo(City, { foreignKey: 'cityId' });
+City.hasMany(Ad, { foreignKey: 'cityId', as: 'ads' });
+Ad.belongsTo(City, { foreignKey: 'cityId', as: 'city' });
 
 Package.hasMany(Ad, { foreignKey: 'packageId' });
 Ad.belongsTo(Package, { foreignKey: 'packageId' });
@@ -380,32 +395,46 @@ app.post('/auth/login', async (req, res) => {
 // ===== AD CRUD ROUTES =====
 
 // Create Ad
-app.post('/ads', authenticateToken, async (req, res) => {
+app.post('/ads', authenticateToken, upload.single('image'), async (req, res) => {
   try {
+    console.log('Incoming Ad Data:', req.body);
+    console.log('Incoming File:', req.file);
+
     const { title, description, price, categoryId, cityId, packageId, schedule } = req.body;
 
     if (!title || !categoryId || !cityId) {
       return res.status(400).json({ message: 'Title, category, and city are required' });
     }
 
-    const ad = await Ad.create({
-      title,
-      description,
-      price,
-      categoryId,
-      cityId,
-      packageId,
-      schedule,
+    const adData = {
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      price: price && !isNaN(parseFloat(price)) ? parseFloat(price) : 0,
+      categoryId: parseInt(categoryId),
+      cityId: parseInt(cityId),
+      packageId: packageId && !isNaN(parseInt(packageId)) ? parseInt(packageId) : null,
+      schedule: schedule ? new Date(schedule) : null,
       userId: req.user.id,
-      status: 'pending',
-    });
+      status: 'published',
+    };
+
+    if (req.file) {
+      adData.image = req.file.path.replace(/\\/g, '/');
+    }
+
+    const ad = await Ad.create(adData);
 
     res.status(201).json({
       message: 'Ad created successfully',
       ad,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create ad', error: error.message });
+    console.error('Ad Creation Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to create ad', 
+      error: error.message,
+      details: error.errors ? error.errors.map((e) => e.message) : undefined
+    });
   }
 });
 
@@ -422,9 +451,9 @@ app.get('/ads', async (req, res) => {
     const ads = await Ad.findAndCountAll({
       where,
       include: [
-        { model: User, attributes: ['id', 'username', 'email'] },
-        { model: Category, attributes: ['id', 'name', 'slug'] },
-        { model: City, attributes: ['id', 'name', 'slug'] },
+        { model: User, as: 'user', attributes: ['id', 'username', 'email'] },
+        { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
+        { model: City, as: 'city', attributes: ['id', 'name', 'slug'] },
       ],
       offset,
       limit: parseInt(limit),
@@ -446,9 +475,9 @@ app.get('/ads/:id', async (req, res) => {
   try {
     const ad = await Ad.findByPk(req.params.id, {
       include: [
-        { model: User, attributes: ['id', 'username', 'email'] },
-        { model: Category, attributes: ['id', 'name'] },
-        { model: City, attributes: ['id', 'name'] },
+        { model: User, as: 'user', attributes: ['id', 'username', 'email'] },
+        { model: Category, as: 'category', attributes: ['id', 'name'] },
+        { model: City, as: 'city', attributes: ['id', 'name'] },
         { model: Package, attributes: ['id', 'name', 'price'] },
       ],
     });

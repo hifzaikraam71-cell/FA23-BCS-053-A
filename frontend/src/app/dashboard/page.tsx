@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 
@@ -23,9 +24,10 @@ interface Ad {
 interface Category { id: number; name: string; slug: string }
 interface City { id: number; name: string; slug: string }
 
-export default function Dashboard() {
+function DashboardContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -37,6 +39,13 @@ export default function Dashboard() {
   });
   const [image, setImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'create') {
+      setActiveTab('create');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -81,15 +90,17 @@ export default function Dashboard() {
       submitData.append('cityId', formData.cityId);
       if (formData.packageId) submitData.append('packageId', formData.packageId);
       if (image) submitData.append('image', image);
-
-      await axios.post('http://localhost:5000/ads', submitData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await axios.post('http://localhost:5000/ads', submitData);
 
       setFormData({ title: '', description: '', price: '', categoryId: '', cityId: '', packageId: '' });
       setImage(null);
       await fetchData();
       setActiveTab('ads');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to create ad');
+      console.error('Submission error:', error);
+      const serverError = error.response?.data?.error || error.response?.data?.message || error.message;
+      const details = error.response?.data?.details ? `\nDetails: ${error.response.data.details.join(', ')}` : '';
+      alert(`Failed to create ad: ${serverError}${details}`);
     } finally {
       setSubmitting(false);
     }
@@ -346,9 +357,22 @@ export default function Dashboard() {
         )}
       </div>
 
-       <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}} />
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-slate-800 border-t-emerald-500 rounded-full animate-spin mx-auto mb-6"></div>
+        <p className="text-slate-400 text-lg animate-pulse tracking-widest uppercase text-sm font-semibold">Initializing...</p>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
