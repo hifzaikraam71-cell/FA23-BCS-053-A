@@ -243,8 +243,9 @@ export default function Explore() {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600">
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <div className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${['from-blue-600 to-indigo-800', 'from-emerald-600 to-teal-800', 'from-orange-600 to-red-800', 'from-purple-600 to-pink-800', 'from-cyan-600 to-blue-800', 'from-pink-600 to-rose-800'][ad.id % 6]} text-white group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]`}>
+                      <span className="text-4xl shadow-sm mb-2 opacity-50">{ad.category?.name ? ad.category.name[0] : '🛒'}</span>
+                      <span className="font-bold tracking-widest text-white/50 uppercase text-xs">Market Asset</span>
                     </div>
                   )}
 
