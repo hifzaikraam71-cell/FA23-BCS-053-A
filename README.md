@@ -7,6 +7,8 @@
 ![Status](https://img.shields.io/badge/status-Production%20Ready-success.svg)
 
 ---
+Live LINK:
+https://fa-23-bcs-053-a-mzlw.vercel.app/
 
 ## ✨ Key Features
 
@@ -645,5 +647,4 @@ For questions or support:
 **Made with ❤️ for excellence** 🚀
 
 
-Live LINK:
-https://fa-23-bcs-053-a-mzlw.vercel.app/
+
