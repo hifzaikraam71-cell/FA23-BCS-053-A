@@ -59,7 +59,7 @@ export default function Admin() {
 
   const fetchPendingAds = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/admin/ads');
+      const res = await axios.get('/admin/ads');
       // The backend model uses 'id', not '_id'
       setAds(res.data.filter((ad: Ad) => ad.status === 'pending'));
     } catch (err) {
@@ -69,7 +69,7 @@ export default function Admin() {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/analytics');
+      const res = await axios.get('/analytics');
       setAnalytics(res.data);
     } catch (err) {
       console.error(err);
@@ -78,7 +78,7 @@ export default function Admin() {
 
   const moderateAd = async (id: number, status: string) => {
     try {
-      await axios.put(`http://localhost:5000/ads/${id}/moderate`, { status });
+      await axios.put(`/ads/${id}/moderate`, { status });
       fetchPendingAds();
       fetchAnalytics();
     } catch (err) {

@@ -1,19 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Standard system fonts for better compatibility in all environments
+const geistSans = { variable: "--font-geist-sans" };
+const geistMono = { variable: "--font-geist-mono" };
 
 export const metadata: Metadata = {
   title: "AdFlow Pro",

@@ -25,7 +25,9 @@ export default function CategoryPage() {
   const fetchCategoryAds = async () => {
     try {
       const res = await axios.get('http://localhost:5000/ads');
-      setAds(res.data.filter((ad: Ad) => ad.category?.toLowerCase() === slug?.toLowerCase()));
+      const adsData = Array.isArray(res.data) ? res.data : res.data.data || [];
+      const currentSlug = Array.isArray(slug) ? slug[0] : slug;
+      setAds(adsData.filter((ad: Ad) => ad.category?.toString().toLowerCase() === currentSlug?.toLowerCase()));
     } catch (err) {
       console.error(err);
     }
@@ -36,7 +38,7 @@ export default function CategoryPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 rounded-[2rem] bg-white p-10 shadow-lg ring-1 ring-slate-200">
           <p className="text-sm uppercase tracking-[0.3em] text-blue-600">Category</p>
-          <h1 className="mt-4 text-4xl font-semibold text-slate-900">{slug?.replace('-', ' ')}</h1>
+          <h1 className="mt-4 text-4xl font-semibold text-slate-900">{(Array.isArray(slug) ? slug[0] : slug)?.replace('-', ' ')}</h1>
           <p className="mt-3 text-slate-600">Browse active ads within this category and filter by package, status, or seller.</p>
         </div>
 

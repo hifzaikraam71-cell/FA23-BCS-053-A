@@ -24,6 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const token = localStorage.getItem('token');
     if (token) {
       try {
@@ -37,7 +38,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await axios.post('http://localhost:5000/auth/login', { email, password });
+    const res = await axios.post('/auth/login', { email, password });
     const token = res.data.token;
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -46,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (username: string, email: string, password: string) => {
-    const res = await axios.post('http://localhost:5000/auth/register', { username, email, password });
+    const res = await axios.post('/auth/register', { username, email, password });
     const token = res.data.token;
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;

@@ -26,7 +26,7 @@ export default function Home() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/ads?limit=6');
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/ads?limit=6`);
         setFeaturedAds(res.data.data);
       } catch (error) {
         console.error('Error fetching ads:', error);
@@ -138,7 +138,7 @@ export default function Home() {
                   <Link href={`/ad/${ad.id}`} key={ad.id} className={`group block rounded-2xl glass-dark border border-white/5 shadow-xl hover:shadow-2xl hover:border-blue-500/30 transition-all duration-500 transform hover:-translate-y-2 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]`} style={{ animationDelay: `${idx * 0.1}s` }}>
                     <div className="h-48 w-full relative overflow-hidden rounded-t-2xl bg-slate-800">
                       {ad.image ? (
-                        <img src={`http://localhost:5000/${ad.image}`} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        <img src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/${ad.image}`} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                       ) : (
                         <div className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${['from-blue-600 to-indigo-800', 'from-emerald-600 to-teal-800', 'from-orange-600 to-red-800', 'from-purple-600 to-pink-800', 'from-cyan-600 to-blue-800', 'from-pink-600 to-rose-800'][ad.id % 6]} transition-transform duration-700 group-hover:scale-110`}>
                           <span className="text-4xl text-white/80 drop-shadow-md mb-2">{ad.category?.name ? ad.category.name[0] : '🛒'}</span>

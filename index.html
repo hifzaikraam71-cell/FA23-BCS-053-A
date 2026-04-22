@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdFlow Pro | Premium Marketplace</title>
+    <title>AdFlow Pro | Premium Ecosystem</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -11,9 +11,10 @@
         :root {
             --primary: #3b82f6;
             --secondary: #8b5cf6;
+            --accent: #0ea5e9;
             --bg: #020617;
-            --glass: rgba(255, 255, 255, 0.05);
-            --border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
         }
 
         * {
@@ -26,184 +27,201 @@
         body {
             background-color: var(--bg);
             color: #f8fafc;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
         }
 
-        /* Animated Blobs */
-        .blob {
+        /* Dynamic Background */
+        .orb {
             position: absolute;
-            width: 500px;
-            height: 500px;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.15;
+            filter: blur(120px);
             z-index: 0;
-            animation: move 20s infinite alternate;
+            opacity: 0.2;
+            animation: pulse 15s infinite alternate;
         }
 
-        .blob-1 { top: -100px; left: -100px; animation-delay: 0s; }
-        .blob-2 { bottom: -100px; right: -100px; animation-delay: -10s; }
+        .orb-1 { width: 600px; height: 600px; background: var(--primary); top: -200px; left: -200px; }
+        .orb-2 { width: 500px; height: 500px; background: var(--secondary); bottom: -150px; right: -150px; animation-delay: -5s; }
+        .orb-3 { width: 400px; height: 400px; background: var(--accent); top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; }
 
-        @keyframes move {
+        @keyframes pulse {
             from { transform: translate(0, 0) scale(1); }
-            to { transform: translate(100px, 100px) scale(1.2); }
+            to { transform: translate(50px, 50px) scale(1.1); }
         }
 
-        .container {
+        main {
             position: relative;
             z-index: 10;
-            text-align: center;
-            padding: 3rem;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 2.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            max-width: 600px;
-            width: 90%;
-            animation: fadeIn 1s ease-out;
+            width: 100%;
+            max-width: 1200px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+        .hero-card {
+            background: var(--glass);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border);
+            border-radius: 4rem;
+            padding: 5rem 3rem;
+            text-align: center;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 800px;
+            animation: slideUp 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .logo-container {
+            margin-bottom: 2rem;
+        }
+
         .logo {
-            font-size: 3rem;
+            font-size: 4.5rem;
             font-weight: 800;
-            background: linear-gradient(to right, #fff, #94a3b8);
+            background: linear-gradient(to bottom right, #fff 30%, #94a3b8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-            letter-spacing: -0.05em;
+            letter-spacing: -0.06em;
+            line-height: 1;
         }
 
-        .badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 1.5rem;
-        }
-
-        p {
+        .tagline {
             color: #94a3b8;
-            font-size: 1.125rem;
-            line-height: 1.6;
-            margin-bottom: 2.5rem;
+            font-size: 1.25rem;
+            max-width: 600px;
+            margin: 1.5rem auto 3rem;
+            line-height: 1.7;
+            font-weight: 300;
         }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            padding: 1.25rem 2.5rem;
-            border-radius: 9999px;
+        .nav-grid {
+            display: grid;
+            grid-template-cols: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            padding: 2rem;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 1.125rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.5);
-            filter: brightness(1.1);
-        }
-
-        .features {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border);
-        }
-
-        .feature-item {
+            color: white;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .feature-item span:first-child {
-            color: #f1f5f9;
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-item i {
+            font-size: 2rem;
+            background: linear-gradient(to br, var(--primary), var(--secondary));
+            padding: 1rem;
+            border-radius: 1.25rem;
+        }
+
+        .nav-item h3 {
             font-weight: 600;
             font-size: 1.25rem;
         }
 
-        .feature-item span:last-child {
+        .nav-item p {
+            font-size: 0.875rem;
             color: #64748b;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
-        .deploy-status {
-            position: absolute;
-            bottom: 2rem;
-            font-size: 0.875rem;
+        .footer {
+            margin-top: 4rem;
             color: #475569;
+            font-size: 0.875rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .glow-btn {
+            position: relative;
+            padding: 1.25rem 3rem;
+            background: #fff;
+            color: #020617;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 1.125rem;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            display: inline-block;
+            margin-bottom: 3rem;
+        }
+
+        .glow-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.4);
+            background: #f1f5f9;
+        }
+
+        @media (max-width: 640px) {
+            .logo { font-size: 3rem; }
+            .hero-card { border-radius: 2.5rem; padding: 3rem 1.5rem; }
         }
     </style>
 </head>
 <body>
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
 
-    <div class="container">
-        <div class="badge">V3.0 Architecture</div>
-        <h1 class="logo">AdFlow Pro</h1>
-        <p>The next generation marketplace platform. Powered by AI discovery, secure transactions, and stunning interactive aesthetics.</p>
-        
-        <a href="frontend/src/app" class="btn">
-            Enter Marketplace
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
+    <main>
+        <div class="hero-card">
+            <div class="logo-container">
+                <h1 class="logo">AdFlow Pro</h1>
+            </div>
+            <p class="tagline">The premium marketplace orchestration engine. Designed for high-frequency discovery, ultra-secure transactions, and aesthetic excellence.</p>
+            
+            <a href="http://localhost:3000" class="glow-btn">Launch Application</a>
 
-        <div class="features">
-            <div class="feature-item">
-                <span>100%</span>
-                <span>Responsive</span>
-            </div>
-            <div class="feature-item">
-                <span>Next.js</span>
-                <span>Framework</span>
-            </div>
-            <div class="feature-item">
-                <span>Glass UI</span>
-                <span>Design</span>
+            <div class="nav-grid">
+                <a href="QUICKSTART.md" class="nav-item">
+                    <h3>Quickstart</h3>
+                    <p>Setup in seconds</p>
+                </a>
+                <a href="ARCHITECTURE.md" class="nav-item">
+                    <h3>Architecture</h3>
+                    <p>Core systems overview</p>
+                </a>
+                <a href="TESTING.md" class="nav-item">
+                    <h3>Testing</h3>
+                    <p>Validation protocols</p>
+                </a>
             </div>
         </div>
-    </div>
 
-    <div class="deploy-status">
-        Connected to GitHub: hifzaikraam71-cell/FA23-BCS-053-A
-    </div>
-
-    <script>
-        // Pre-check if running on Vercel or locally to adjust link if needed
-        const marketplaceLink = document.querySelector('.btn');
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            // Once deployed, this could point to the actual Vercel subdomain
-            // marketplaceLink.href = 'https://your-vercel-link.vercel.app';
-        }
-    </script>
+        <div class="footer">
+            Repository: hifzaikraam71-cell / FA23-BCS-053-A
+        </div>
+    </main>
 </body>
 </html>

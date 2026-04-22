@@ -57,9 +57,9 @@ export default function Explore() {
   const fetchData = async () => {
     try {
       const [adsRes, categoriesRes, citiesRes] = await Promise.all([
-        axios.get('http://localhost:5000/ads'),
-        axios.get('http://localhost:5000/categories'),
-        axios.get('http://localhost:5000/cities'),
+        axios.get('/ads'),
+        axios.get('/categories'),
+        axios.get('/cities'),
       ]);
       setAds(adsRes.data.data || []);
       setCategories(categoriesRes.data || []);
@@ -77,7 +77,7 @@ export default function Explore() {
       if (selectedCategory) params.append('categoryId', selectedCategory.toString());
       if (selectedCity) params.append('cityId', selectedCity.toString());
 
-      const res = await axios.get(`http://localhost:5000/ads?${params}`);
+      const res = await axios.get(`/ads?${params}`);
       let adsData = res.data.data || [];
 
       if (sortBy === 'price-low') {
@@ -238,7 +238,7 @@ export default function Explore() {
                 <div className="aspect-[4/3] relative overflow-hidden rounded-t-3xl bg-slate-900">
                   {ad.image ? (
                     <img
-                      src={`http://localhost:5000/${ad.image}`}
+                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/${ad.image}`}
                       alt={ad.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     />

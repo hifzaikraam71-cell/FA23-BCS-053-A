@@ -55,9 +55,9 @@ function DashboardContent() {
   const fetchData = async () => {
     try {
       const [adsRes, categoriesRes, citiesRes] = await Promise.all([
-        axios.get('http://localhost:5000/ads'),
-        axios.get('http://localhost:5000/categories'),
-        axios.get('http://localhost:5000/cities'),
+        axios.get('/ads'),
+        axios.get('/categories'),
+        axios.get('/cities'),
       ]);
       const userAds = adsRes.data.data.filter((ad: Ad) => ad.user?.id === user?.id);
       setAds(userAds);
@@ -90,7 +90,7 @@ function DashboardContent() {
       submitData.append('cityId', formData.cityId);
       if (formData.packageId) submitData.append('packageId', formData.packageId);
       if (image) submitData.append('image', image);
-      await axios.post('http://localhost:5000/ads', submitData);
+      await axios.post('/ads', submitData);
 
       setFormData({ title: '', description: '', price: '', categoryId: '', cityId: '', packageId: '' });
       setImage(null);
@@ -185,7 +185,7 @@ function DashboardContent() {
                   <div key={ad.id} className="bg-slate-900 rounded-3xl overflow-hidden border border-white/5 shadow-xl group hover:border-emerald-500/30 transition-all">
                      <div className="h-48 relative overflow-hidden bg-slate-800">
                       {ad.image ? (
-                        <img src={`http://localhost:5000/${ad.image}`} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <img src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/${ad.image}`} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       ) : (
                         <div className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${['from-blue-600 to-indigo-800', 'from-emerald-600 to-teal-800', 'from-orange-600 to-red-800', 'from-purple-600 to-pink-800', 'from-cyan-600 to-blue-800', 'from-pink-600 to-rose-800'][ad.id % 6]} text-white group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]`}>
                           <span className="text-4xl shadow-sm mb-2 opacity-50">{ad.category?.name ? ad.category.name[0] : '📦'}</span>
