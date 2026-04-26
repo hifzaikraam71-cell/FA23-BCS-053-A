@@ -1,11 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { validatePassword } from '@/lib/validation';
+import { Suspense } from 'react';
 
 export default function Login() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,6 +24,10 @@ export default function Login() {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode'); // 'seller' or 'buyer'
+
+  const modeText = mode === 'seller' ? 'Seller' : mode === 'buyer' ? 'Buyer' : '';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -83,8 +97,14 @@ export default function Login() {
           </div>
 
           <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Sign in to your account</h2>
-            <p className="text-slate-400">Enter your credentials to access the platform</p>
+            <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">
+              {modeText ? `Sign in as ${modeText}` : 'Sign in to your account'}
+            </h2>
+            <p className="text-slate-400">
+              {mode === 'seller' ? 'Access your vendor dashboard to manage listings' : 
+               mode === 'buyer' ? 'Login to chat and call sellers' : 
+               'Enter your credentials to access the platform'}
+            </p>
           </div>
 
           {error && (
@@ -168,10 +188,10 @@ export default function Login() {
           <div className="mt-8 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 flex items-center justify-between">
             <div className="text-sm">
               <span className="text-slate-400 block text-xs uppercase tracking-wider mb-1">Demo Access</span>
-              <span className="text-blue-300 font-medium">demo@example.com</span> <span className="text-slate-600 mx-1">/</span> <span className="text-slate-400">demo123</span>
+              <span className="text-blue-300 font-medium">demo@example.com</span> <span className="text-slate-600 mx-1">/</span> <span className="text-slate-400">Demo123!</span>
             </div>
             <button 
-              onClick={() => setFormData({ email: 'demo@example.com', password: 'demo123' })}
+              onClick={() => setFormData({ email: 'demo@example.com', password: 'Demo123!' })}
               className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-semibold hover:bg-blue-500/30 transition-colors"
             >
               Autofill

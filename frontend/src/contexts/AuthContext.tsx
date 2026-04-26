@@ -20,11 +20,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Set base URL immediately
+axios.defaults.baseURL = typeof window !== 'undefined' 
+  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+  : 'http://localhost:5000';
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    axios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const token = localStorage.getItem('token');
     if (token) {
       try {
@@ -40,19 +44,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     const res = await axios.post('/auth/login', { email, password });
     const token = res.data.token;
+    const userData = res.data.user;
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    const decoded: any = jwtDecode(token);
-    setUser({ id: decoded.id, username: decoded.username, email: decoded.email, role: decoded.role });
+    setUser({ 
+      id: userData.id, 
+      username: userData.username, 
+      email: userData.email, 
+      role: userData.role 
+    });
   };
 
   const register = async (username: string, email: string, password: string) => {
     const res = await axios.post('/auth/register', { username, email, password });
     const token = res.data.token;
+    const userData = res.data.user;
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    const decoded: any = jwtDecode(token);
-    setUser({ id: decoded.id, username: decoded.username, email: decoded.email, role: decoded.role });
+    setUser({ 
+      id: userData.id, 
+      username: userData.username, 
+      email: userData.email, 
+      role: userData.role 
+    });
   };
 
   const logout = () => {

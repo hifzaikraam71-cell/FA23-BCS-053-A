@@ -164,7 +164,7 @@ const Ad = sequelize.define('Ad', {
   images: DataTypes.JSON,
   price: DataTypes.DECIMAL(10, 2),
   status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'published', 'archived'),
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'published', 'archived', 'sold'),
     defaultValue: 'pending',
   },
   sponsored: {
@@ -273,6 +273,37 @@ const Analytics = sequelize.define('Analytics', {
   tableName: 'analytics',
 });
 
+// Sale Model
+const Sale = sequelize.define('Sale', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  adId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: Ad,
+      key: 'id',
+    },
+  },
+  sellerId: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id',
+    },
+  },
+  price: DataTypes.DECIMAL(10, 2),
+  soldAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  timestamps: true,
+  tableName: 'sales',
+});
+
 // ===== DATABASE ASSOCIATIONS =====
 
 User.hasMany(Ad, { foreignKey: 'userId', as: 'ads' });
@@ -295,6 +326,12 @@ Payment.belongsTo(Ad, { foreignKey: 'adId' });
 
 Ad.hasMany(Analytics, { foreignKey: 'adId' });
 Analytics.belongsTo(Ad, { foreignKey: 'adId' });
+
+User.hasMany(Sale, { foreignKey: 'sellerId', as: 'sales' });
+Sale.belongsTo(User, { foreignKey: 'sellerId', as: 'seller' });
+
+Ad.hasOne(Sale, { foreignKey: 'adId', as: 'saleInfo' });
+Sale.belongsTo(Ad, { foreignKey: 'adId', as: 'ad' });
 
 // ===== JWT Authentication Middleware =====
 
@@ -423,6 +460,7 @@ app.post('/ads', authenticateToken, upload.single('image'), async (req, res) => 
     }
 
     const ad = await Ad.create(adData);
+    console.log('✅ Ad Created:', ad.id, '-', ad.title);
 
     res.status(201).json({
       message: 'Ad created successfully',
@@ -447,6 +485,10 @@ app.get('/ads', async (req, res) => {
     const where = { status: 'published' };
     if (categoryId) where.categoryId = categoryId;
     if (cityId) where.cityId = cityId;
+    if (status && status !== 'published') {
+      delete where.status;
+      where.status = status;
+    }
 
     const ads = await Ad.findAndCountAll({
       where,
@@ -540,6 +582,66 @@ app.delete('/ads/:id', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete ad', error: error.message });
+  }
+});
+
+// Mark Ad as Sold
+app.post('/ads/:id/sell', authenticateToken, async (req, res) => {
+  try {
+    const ad = await Ad.findByPk(req.params.id);
+
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    if (ad.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    if (ad.status === 'sold') {
+      return res.status(400).json({ message: 'Ad is already sold' });
+    }
+
+    // Update ad status
+    await ad.update({ status: 'sold' });
+
+    // Create sale record
+    const sale = await Sale.create({
+      adId: ad.id,
+      sellerId: req.user.id,
+      price: ad.price,
+    });
+
+    res.json({
+      message: 'Ad marked as sold successfully',
+      sale,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to mark ad as sold', error: error.message });
+  }
+});
+
+// Get Sales History
+app.get('/sales/history', authenticateToken, async (req, res) => {
+  try {
+    const sales = await Sale.findAll({
+      where: { sellerId: req.user.id },
+      include: [
+        { 
+          model: Ad, 
+          as: 'ad',
+          include: [
+            { model: Category, as: 'category', attributes: ['name'] },
+            { model: City, as: 'city', attributes: ['name'] }
+          ]
+        }
+      ],
+      order: [['soldAt', 'DESC']],
+    });
+
+    res.json(sales);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch sales history', error: error.message });
   }
 });
 
@@ -673,6 +775,98 @@ app.post('/payments', authenticateToken, async (req, res) => {
   }
 });
 
+// Admin: Get all ads (including pending)
+app.get('/admin/ads', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    if (status) where.status = status;
+
+    const ads = await Ad.findAndCountAll({
+      where,
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'username', 'email'] },
+        { model: Category, as: 'category', attributes: ['id', 'name'] },
+        { model: City, as: 'city', attributes: ['id', 'name'] },
+      ],
+      offset,
+      limit: parseInt(String(limit)),
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json({
+      data: ads.rows,
+      total: ads.count,
+      pages: Math.ceil(ads.count / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch ads', error: error.message });
+  }
+});
+
+// Admin: Approve/Reject ad
+app.put('/admin/ads/:id/status', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const { status, rejectionReason } = req.body;
+    const ad = await Ad.findByPk(req.params.id);
+
+    if (!ad) {
+      return res.status(404).json({ message: 'Ad not found' });
+    }
+
+    if (!['approved', 'rejected', 'published'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    ad.status = status;
+    if (rejectionReason) {
+      ad.description = (ad.description || '') + `\n\nRejection Reason: ${rejectionReason}`;
+    }
+    await ad.save();
+
+    res.json({ message: `Ad ${status} successfully`, ad });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update ad status', error: error.message });
+  }
+});
+
+// Admin: Get all users
+app.get('/admin/users', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const users = await User.findAndCountAll({
+      attributes: ['id', 'username', 'email', 'role', 'createdAt'],
+      offset,
+      limit: parseInt(String(limit)),
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json({
+      data: users.rows,
+      total: users.count,
+      pages: Math.ceil(users.count / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+  }
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ message: 'Backend Working ✅', status: 'online' });
@@ -740,6 +934,22 @@ const seedData = async () => {
       });
     }
 
+    // Create demo user if not exists
+    const demoEmail = 'demo@example.com';
+    let demoUser = await User.findOne({ where: { email: demoEmail } });
+    if (!demoUser) {
+      const hashedPassword = await bcrypt.hash('Demo123!', 10);
+      demoUser = await User.create({
+        username: 'DemoUser',
+        email: demoEmail,
+        password: hashedPassword,
+        role: 'admin',
+      });
+      console.log('✅ Demo user created: demo@example.com / Demo123!');
+    }
+
+    const userId = demoUser.id;
+
     // Make first user admin
     const firstUser = await User.findOne();
     if (firstUser) {
@@ -754,7 +964,7 @@ const seedData = async () => {
         price: 250000,
         categoryId: 1, // Electronics
         cityId: 1, // Karachi
-        userId: 1,
+        userId: userId,
         status: 'published',
       },
       {
@@ -763,7 +973,7 @@ const seedData = async () => {
         price: 15000,
         categoryId: 2, // Fashion
         cityId: 2, // Lahore
-        userId: 1,
+        userId: userId,
         status: 'published',
       },
       {
@@ -772,7 +982,7 @@ const seedData = async () => {
         price: 3200000,
         categoryId: 4, // Vehicles
         cityId: 1, // Karachi
-        userId: 1,
+        userId: userId,
         status: 'published',
       },
       {
@@ -781,7 +991,7 @@ const seedData = async () => {
         price: 85000,
         categoryId: 3, // Home
         cityId: 3, // Islamabad
-        userId: 1,
+        userId: userId,
         status: 'published',
       },
       {
@@ -790,7 +1000,7 @@ const seedData = async () => {
         price: 280000,
         categoryId: 1, // Electronics
         cityId: 2, // Lahore
-        userId: 1,
+        userId: userId,
         status: 'published',
       },
       {
@@ -799,7 +1009,7 @@ const seedData = async () => {
         price: 12000,
         categoryId: 6, // Sports
         cityId: 4, // Multan
-        userId: 1,
+        userId: userId,
         status: 'published',
       },
     ];

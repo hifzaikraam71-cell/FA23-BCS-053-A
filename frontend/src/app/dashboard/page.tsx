@@ -26,14 +26,18 @@ interface Category { id: number; name: string; slug: string }
 interface City { id: number; name: string; slug: string }
 
 function DashboardContent() {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
+  // Bypass login: use demo user if no one is logged in
+  const user = authUser || { id: 1, username: 'DemoUser', email: 'demo@example.com', role: 'admin' };
+  
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ads, setAds] = useState<Ad[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'ads' | 'create'>('ads');
+  const [activeTab, setActiveTab] = useState<'ads' | 'create' | 'sales'>('ads');
 
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', categoryId: '', cityId: '', packageId: '',
@@ -49,25 +53,38 @@ function DashboardContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
+    // Redirect removed as requested - allowing direct access
     fetchData();
   }, [user, router]);
 
   const fetchData = async () => {
     try {
-      const [adsRes, categoriesRes, citiesRes] = await Promise.all([
+      const [adsRes, categoriesRes, citiesRes, salesRes] = await Promise.all([
         axios.get('/ads'),
         axios.get('/categories'),
         axios.get('/cities'),
+        axios.get('/sales/history'),
       ]);
       const userAds = adsRes.data.data.filter((ad: Ad) => ad.user?.id === user?.id);
       setAds(userAds);
       setCategories(categoriesRes.data);
       setCities(citiesRes.data);
+      setSales(salesRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSell = async (adId: number) => {
+    if (!confirm('Are you sure you want to mark this item as sold?')) return;
+    try {
+      await axios.post(`/ads/${adId}/sell`);
+      alert('Item marked as sold!');
+      fetchData();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to mark as sold');
     }
   };
 
@@ -162,6 +179,14 @@ function DashboardContent() {
           >
             + Create Listing
           </button>
+          <button
+            onClick={() => setActiveTab('sales')}
+            className={`px-8 py-3 rounded-xl font-bold transition-all duration-300 ${
+              activeTab === 'sales' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+             Sales History <span className="ml-2 bg-black/20 px-2 py-0.5 rounded-full text-xs">{sales.length}</span>
+          </button>
         </div>
 
         {activeTab === 'ads' && (
@@ -225,6 +250,14 @@ function DashboardContent() {
                          <Link href={`/ad/${ad.id}`} className="flex-1 bg-white/5 border border-white/10 text-white py-3 rounded-xl font-bold hover:bg-white/10 transition-colors text-center text-sm">
                             Manage
                          </Link>
+                         {ad.status !== 'sold' && (
+                           <button 
+                             onClick={() => handleSell(ad.id)}
+                             className="flex-1 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 py-3 rounded-xl font-bold hover:bg-emerald-600/30 transition-colors text-center text-sm"
+                           >
+                             Mark Sold
+                           </button>
+                         )}
                       </div>
                     </div>
                   </div>
@@ -354,6 +387,48 @@ function DashboardContent() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Sales History Tab */}
+        {activeTab === 'sales' && (
+          <div className="space-y-6 animate-[fadeIn_0.4s_ease-out_forwards]">
+            {sales.length === 0 ? (
+              <div className="text-center py-20 px-4 glass-dark rounded-3xl border border-white/5 border-dashed">
+                <h3 className="text-2xl font-bold text-white mb-2">No Sales Recorded</h3>
+                <p className="text-slate-400 mb-8 max-w-md mx-auto">Items you mark as "Sold" will appear here in your commercial record.</p>
+              </div>
+            ) : (
+              <div className="bg-slate-900/50 rounded-3xl border border-white/5 overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900/80 text-slate-400 text-xs uppercase tracking-widest font-bold">
+                    <tr>
+                      <th className="px-6 py-4">Asset</th>
+                      <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Price</th>
+                      <th className="px-6 py-4">Sold Date</th>
+                      <th className="px-6 py-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {sales.map((sale) => (
+                      <tr key={sale.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-white">{sale.ad?.title}</div>
+                          <div className="text-xs text-slate-500">ID: #{sale.adId}</div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-400">{sale.ad?.category?.name}</td>
+                        <td className="px-6 py-4 font-bold text-emerald-400">Rs. {sale.price?.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-slate-400">{new Date(sale.soldAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase">Settled</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

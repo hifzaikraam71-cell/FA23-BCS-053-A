@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { validatePassword, validateEmail } from '@/lib/validation';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -26,6 +27,15 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateEmail(formData.email)) {
+      return setError('Please enter a valid email address');
+    }
+
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      return setError(passwordValidation.errors[0]);
+    }
+
     if (formData.password !== formData.confirmPassword) {
       return setError('Passwords do not match');
     }

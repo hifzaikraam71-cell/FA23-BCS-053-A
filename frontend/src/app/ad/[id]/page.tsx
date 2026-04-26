@@ -187,12 +187,57 @@ export default function AdDetail() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="w-full bg-white text-slate-900 py-4 px-4 rounded-xl font-bold hover:bg-slate-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]">
-                    Contact Seller
+                <div className="grid grid-cols-3 gap-3">
+                  <button 
+                    onClick={() => {
+                      alert(`Chat initiated with ${ad.user?.username}. (Simulation)`);
+                    }}
+                    className="w-full bg-white text-slate-900 py-4 px-4 rounded-xl font-bold hover:bg-slate-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Chat
                   </button>
-                  <button className="w-full glass bg-slate-800 text-white py-4 px-4 rounded-xl font-bold hover:bg-slate-700 transition-all border border-white/10 group">
-                    <span className="group-hover:text-pink-400 transition-colors">♥ Save Asset</span>
+                  <button 
+                    onClick={() => {
+                      alert(`Call logic for ${ad.user?.username}: ${ad.user?.email} (Simulation)`);
+                    }}
+                    className="w-full glass bg-slate-800 text-white py-4 px-4 rounded-xl font-bold hover:bg-slate-700 transition-all border border-white/10 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    Call
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (!ad.price) {
+                        alert('Price not available for this item');
+                        return;
+                      }
+                      try {
+                        const token = localStorage.getItem('token');
+                        if (!token) {
+                          alert('Please login to make payment');
+                          window.location.href = '/login';
+                          return;
+                        }
+                        const res = await axios.post('http://localhost:5000/payments', 
+                          { adId: ad.id, amount: ad.price, currency: 'PKR' },
+                          { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        alert(`Payment initiated! Order ID: ${res.data.payment?.id}\nAmount: Rs. ${ad.price}`);
+                      } catch (err: any) {
+                        alert(err.response?.data?.message || 'Payment failed. Please login first.');
+                      }
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-4 px-4 rounded-xl font-bold hover:from-emerald-400 hover:to-teal-500 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay
                   </button>
                 </div>
               </div>

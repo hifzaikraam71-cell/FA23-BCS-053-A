@@ -59,11 +59,12 @@ export default function Admin() {
 
   const fetchPendingAds = async () => {
     try {
-      const res = await axios.get('/admin/ads');
-      // The backend model uses 'id', not '_id'
-      setAds(res.data.filter((ad: Ad) => ad.status === 'pending'));
+      const res = await axios.get('/admin/ads?status=pending');
+      // Backend returns { data: [], total, pages }
+      const adsData = res.data.data || res.data || [];
+      setAds(adsData.filter((ad: Ad) => ad.status === 'pending'));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch pending ads:', err);
     }
   };
 
@@ -78,11 +79,11 @@ export default function Admin() {
 
   const moderateAd = async (id: number, status: string) => {
     try {
-      await axios.put(`/ads/${id}/moderate`, { status });
+      await axios.put(`/admin/ads/${id}/status`, { status });
       fetchPendingAds();
       fetchAnalytics();
-    } catch (err) {
-      alert('Error moderating ad');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error moderating ad');
     }
   };
 
