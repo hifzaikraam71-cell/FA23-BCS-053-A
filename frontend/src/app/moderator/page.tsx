@@ -25,7 +25,7 @@ export default function ModeratorPage() {
 
   const fetchPendingAds = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/ads');
+      const res = await axios.get('/api/ads');
       setAds(res.data.filter((ad: Ad) => ad.status === 'pending'));
     } catch (err) {
       console.error(err);
@@ -34,7 +34,7 @@ export default function ModeratorPage() {
 
   const reviewAd = async (id: string, status: string) => {
     try {
-      await axios.put(`http://localhost:5000/ads/${id}/moderate`, { status });
+      await axios.put(`/api/ads/${id}/moderate`, { status });
       fetchPendingAds();
     } catch (err) {
       alert('Unable to update status.');

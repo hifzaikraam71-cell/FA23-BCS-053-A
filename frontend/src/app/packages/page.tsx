@@ -1,4 +1,4 @@
-ï»¿export default function Packages() {
+export default function Packages() {
   return (
     <div className="min-h-screen bg-slate-50 py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -14,9 +14,9 @@
             <h2 className="mt-4 text-3xl font-semibold text-slate-900">7-day listing</h2>
             <p className="mt-4 text-slate-600">A simple starter package with standard exposure for new listings.</p>
             <ul className="mt-6 space-y-3 text-slate-600">
-              <li>â€¢ 7 days active duration</li>
-              <li>â€¢ Standard placement</li>
-              <li>â€¢ Basic support</li>
+              <li>• 7 days active duration</li>
+              <li>• Standard placement</li>
+              <li>• Basic support</li>
             </ul>
             <div className="mt-8 flex items-center justify-between">
               <span className="text-3xl font-semibold text-blue-700">$10</span>
@@ -29,9 +29,9 @@
             <h2 className="mt-4 text-3xl font-semibold text-slate-900">15-day priority</h2>
             <p className="mt-4 text-slate-600">A balanced option with category priority and manual refresh support.</p>
             <ul className="mt-6 space-y-3 text-slate-600">
-              <li>â€¢ 15 days active duration</li>
-              <li>â€¢ Category priority</li>
-              <li>â€¢ Email support</li>
+              <li>• 15 days active duration</li>
+              <li>• Category priority</li>
+              <li>• Email support</li>
             </ul>
             <div className="mt-8 flex items-center justify-between">
               <span className="text-3xl font-semibold text-blue-700">$25</span>
@@ -44,9 +44,9 @@
             <h2 className="mt-4 text-3xl font-semibold text-slate-900">30-day featured</h2>
             <p className="mt-4 text-slate-600">A premium package designed for maximum homepage exposure and auto-refresh behavior.</p>
             <ul className="mt-6 space-y-3 text-slate-600">
-              <li>â€¢ 30 days active duration</li>
-              <li>â€¢ Homepage featured placement</li>
-              <li>â€¢ Auto refresh every 3 days</li>
+              <li>• 30 days active duration</li>
+              <li>• Homepage featured placement</li>
+              <li>• Auto refresh every 3 days</li>
             </ul>
             <div className="mt-8 flex items-center justify-between">
               <span className="text-3xl font-semibold text-blue-700">$50</span>

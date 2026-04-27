@@ -20,10 +20,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Set base URL immediately
-axios.defaults.baseURL = typeof window !== 'undefined' 
-  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
-  : 'http://localhost:5000';
+// Set base URL - use environment variable or default to localhost
+// For production, set NEXT_PUBLIC_API_URL in your Vercel project settings
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+axios.defaults.baseURL = API_URL;
+axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

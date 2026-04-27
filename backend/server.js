@@ -13,7 +13,10 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5000', /\.vercel\.app$/, /\.vercel\.app$/],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb' }));
 app.use('/uploads', express.static('uploads'));
@@ -21,7 +24,7 @@ app.use('/uploads', express.static('uploads'));
 // Database Configuration
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: 'database.sqlite',
+  storage: path.join(__dirname, 'database.sqlite'),
   logging: false,
 });
 
@@ -887,8 +890,13 @@ const startServer = async () => {
     // Seed data
     await seedData();
 
+    if (process.env.VERCEL) {
+      console.log('Running on Vercel - Skipping app.listen');
+      return;
+    }
+
     app.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
+      console.log(`🚀 Server is running on port ${PORT}`);
     });
   } catch (error) {
     console.error('❌ Database Connection Failed:', error.message);

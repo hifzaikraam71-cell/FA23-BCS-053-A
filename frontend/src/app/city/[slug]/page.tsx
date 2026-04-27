@@ -23,7 +23,7 @@ export default function CityPage() {
 
   const fetchCityAds = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/ads');
+      const res = await axios.get('/api/ads');
       setAds(res.data.slice(0, 6));
     } catch (err) {
       console.error(err);
