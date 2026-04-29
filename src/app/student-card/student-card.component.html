@@ -1,0 +1,16 @@
+<div style="border: 2px solid #007bff; padding: 15px; border-radius: 8px; background-color: #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+  
+  <div>
+    <h5 style="margin: 0; color: #495057;">Child Component (Student Card)</h5>
+    <!-- Interpolation: Displaying the data received via @Input -->
+    <p style="margin: 5px 0 0 0; font-size: 18px;"><strong>{{ studentIndex + 1 }}. {{ studentData }}</strong></p>
+  </div>
+  
+  <!-- Event Binding: Triggers the child method to emit an event via @Output -->
+  <button 
+    (click)="removeStudent()" 
+    style="background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">
+    Remove
+  </button>
+  
+</div>
